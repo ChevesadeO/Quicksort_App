@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab #3 – Quicksort | Estructura de Datos II | UTP Colón</title>
+<style>
+/* ── Reset & Base ───────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0f1117;
+  --bg2:       #1a1d27;
+  --bg3:       #22263a;
+  --border:    rgba(255,255,255,0.08);
+  --border2:   rgba(255,255,255,0.14);
+  --text:      #e8eaf0;
+  --text2:     #8b90a8;
+  --text3:     #555a72;
+  --green:     #3ecf8e;
+  --green-dim: rgba(62,207,142,0.12);
+  --amber:     #f5a623;
+  --amber-dim: rgba(245,166,35,0.12);
+  --blue:      #5b8dee;
+  --blue-dim:  rgba(91,141,238,0.12);
+  --purple:    #a78bfa;
+  --purple-dim:rgba(167,139,250,0.12);
+  --coral:     #f87171;
+  --radius:    10px;
+  --radius-lg: 14px;
+  --mono:      'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  --sans:      'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* ── Layout ─────────────────────────────────────────────────── */
+.page { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+/* ── Header ─────────────────────────────────────────────────── */
+.app-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 0.5px solid var(--border);
+  flex-wrap: wrap;
+}
+.app-header-left {}
+.app-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--green);
+  background: var(--green-dim);
+  border: 0.5px solid rgba(62,207,142,0.25);
+  padding: 3px 10px;
+  border-radius: 99px;
+  margin-bottom: .6rem;
+  letter-spacing: .04em;
+}
+.app-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -.02em;
+  line-height: 1.2;
+}
+.app-title span { color: var(--green); }
+.app-subtitle { font-size: 13px; color: var(--text2); margin-top: 4px; }
+.app-header-right { text-align: right; }
+.info-pill {
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--text3);
+  background: var(--bg3);
+  border: 0.5px solid var(--border);
+  padding: 3px 9px;
+  border-radius: 6px;
+  display: inline-block;
+  margin-bottom: 3px;
+}
+
+/* ── Section titles ─────────────────────────────────────────── */
+.section-label {
+  font-size: 10px;
+  font-family: var(--mono);
+  letter-spacing: .1em;
+  color: var(--text3);
+  text-transform: uppercase;
+  margin-bottom: .6rem;
+}
+
+/* ── Stats row ──────────────────────────────────────────────── */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 1.25rem;
+}
+.stat {
+  background: var(--bg2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: .75rem 1rem;
+}
+.stat-label {
+  font-size: 10px;
+  font-family: var(--mono);
+  letter-spacing: .07em;
+  color: var(--text3);
+  text-transform: uppercase;
+}
+.stat-val {
+  font-size: 22px;
+  font-weight: 600;
+  font-family: var(--mono);
+  color: var(--text);
+  margin-top: 3px;
+}
+
+/* ── Visualizer ─────────────────────────────────────────────── */
+.viz-card {
+  background: var(--bg2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.25rem .75rem;
+  margin-bottom: 1rem;
+}
+.viz-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 200px;
+  margin-bottom: .5rem;
+}
+.bar-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+}
+.bar {
+  width: 100%;
+  border-radius: 3px 3px 0 0;
+  transition: height .1s ease, background-color .1s ease;
+}
+.bar-num {
+  font-size: 8px;
+  font-family: var(--mono);
+  color: var(--text3);
+  margin-top: 4px;
+}
+/* bar colors */
+.b-default  { background: #3a3f58; }
+.b-range    { background: #4a3f7a; }
+.b-pivot    { background: var(--amber); }
+.b-compare  { background: var(--blue); }
+.b-swap     { background: var(--green); }
+.b-sorted   { background: rgba(62,207,142,0.45); border-bottom: 2px solid var(--green); }
+
+/* ── Legend ─────────────────────────────────────────────────── */
+.legend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.leg {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--text2);
+}
+.leg-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* ── Controls ───────────────────────────────────────────────── */
+.controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+.btn {
+  font-size: 12px;
+  font-family: var(--mono);
+  padding: .45rem 1rem;
+  border-radius: var(--radius);
+  border: 0.5px solid var(--border2);
+  background: var(--bg2);
+  color: var(--text2);
+  cursor: pointer;
+  transition: all .12s;
+  white-space: nowrap;
+}
+.btn:hover { background: var(--bg3); color: var(--text); }
+.btn:disabled { opacity: .35; cursor: not-allowed; }
+.btn-green { border-color: rgba(62,207,142,.4); color: var(--green); background: var(--green-dim); }
+.btn-green:hover { background: rgba(62,207,142,.2); }
+.btn-amber { border-color: rgba(245,166,35,.4); color: var(--amber); background: var(--amber-dim); }
+.btn-amber:hover { background: rgba(245,166,35,.2); }
+.btn-coral { border-color: rgba(248,113,113,.3); color: var(--coral); background: rgba(248,113,113,.08); }
+.btn-coral:hover { background: rgba(248,113,113,.15); }
+
+.speed-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.speed-wrap label {
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--text2);
+}
+input[type=range] {
+  width: 90px;
+  accent-color: var(--green);
+  cursor: pointer;
+}
+.speed-val {
+  font-size: 12px;
+  font-family: var(--mono);
+  color: var(--green);
+  min-width: 16px;
+}
+
+/* ── Array display ──────────────────────────────────────────── */
+.arrays-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 1.25rem;
+}
+.arr-box {
+  background: var(--bg2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: .65rem .9rem;
+}
+.arr-label {
+  font-size: 10px;
+  font-family: var(--mono);
+  letter-spacing: .08em;
+  color: var(--text3);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.arr-nums {
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--text);
+  line-height: 1.7;
+  word-break: break-all;
+}
+.arr-nums.done { color: var(--green); }
+
+/* ── Log ────────────────────────────────────────────────────── */
+.log {
+  background: var(--bg2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: .65rem .9rem;
+  height: 96px;
+  overflow-y: auto;
+  font-size: 11px;
+  font-family: var(--mono);
+  line-height: 1.8;
+  margin-bottom: 2rem;
+}
+.log-line  { color: var(--text3); }
+.log-pivot { color: var(--amber); }
+.log-swap  { color: var(--green); }
+.log-done  { color: var(--green); font-weight: 600; }
+
+/* ── Divider ────────────────────────────────────────────────── */
+.divider {
+  height: 0.5px;
+  background: var(--border);
+  margin: 2rem 0;
+}
+
+/* ── Tabs ───────────────────────────────────────────────────── */
+.tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--bg2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 3px;
+  margin-bottom: 1.25rem;
+  width: fit-content;
+}
+.tab {
+  font-size: 12px;
+  font-family: var(--mono);
+  padding: .35rem .85rem;
+  border-radius: 7px;
+  cursor: pointer;
+  color: var(--text2);
+  transition: all .12s;
+  border: none;
+  background: transparent;
+}
+.tab.active {
+  background: var(--bg3);
+  color: var(--text);
+  border: 0.5px solid var(--border2);
+}
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+/* ── Code block ─────────────────────────────────────────────── */
+.code-card {
+  background: var(--bg2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.code-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .6rem 1rem;
+  border-bottom: 0.5px solid var(--border);
+  background: var(--bg3);
+}
+.code-filename {
+  font-size: 12px;
+  font-family: var(--mono);
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.copy-btn {
+  font-size: 11px;
+  font-family: var(--mono);
+  padding: .25rem .7rem;
+  border-radius: 6px;
+  border: 0.5px solid var(--border2);
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all .12s;
+}
+.copy-btn:hover { background: var(--bg); color: var(--green); border-color: rgba(62,207,142,.3); }
+pre {
+  padding: 1.25rem;
+  overflow-x: auto;
+  font-size: 12.5px;
+  line-height: 1.85;
+  font-family: var(--mono);
+  tab-size: 4;
+  counter-reset: line;
+}
+.line {
+  display: block;
+  position: relative;
+  padding-left: 2.5rem;
+}
+.line::before {
+  content: counter(line);
+  counter-increment: line;
+  position: absolute;
+  left: 0;
+  width: 2rem;
+  text-align: right;
+  color: var(--text3);
+  font-size: 11px;
+  user-select: none;
+}
+.line.hl { background: rgba(62,207,142,.07); border-left: 2px solid var(--green); margin-left: -1.25rem; padding-left: calc(2.5rem + 1.25rem - 2px); }
+
+/* Syntax colors */
+.kw  { color: #c792ea; }
+.fn  { color: var(--green); }
+.cm  { color: #546e7a; font-style: italic; }
+.st  { color: #f78c6c; }
+.nm  { color: var(--amber); }
+.bi  { color: var(--blue); }
+.df  { color: #c792ea; }
+.op  { color: #89ddff; }
+
+/* ── Code legend ────────────────────────────────────────────── */
+.code-legend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: .75rem;
+}
+.cl {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--text2);
+}
+.cl-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+/* ── Step cards ─────────────────────────────────────────────── */
+.step-grid { display: grid; gap: 10px; }
+.step-card {
+  background: var(--bg2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: .85rem 1rem;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  transition: border-color .15s;
+}
+.step-card:hover { border-color: var(--border2); }
+.step-num {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--green-dim);
+  border: 0.5px solid rgba(62,207,142,.3);
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--mono);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.step-name { font-size: 13px; font-weight: 600; font-family: var(--mono); color: var(--text); margin-bottom: 4px; }
+.step-desc { font-size: 12px; color: var(--text2); line-height: 1.6; }
+.step-desc code { font-family: var(--mono); color: var(--amber); font-size: 11px; }
+
+/* ── Complexity table ───────────────────────────────────────── */
+.table-wrap { overflow-x: auto; margin-bottom: 1.5rem; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  font-family: var(--mono);
+}
+th {
+  background: var(--bg3);
+  padding: .5rem .85rem;
+  text-align: left;
+  font-weight: 500;
+  color: var(--text2);
+  font-size: 11px;
+  border-bottom: 0.5px solid var(--border2);
+  letter-spacing: .04em;
+}
+td {
+  padding: .5rem .85rem;
+  border-bottom: 0.5px solid var(--border);
+  color: var(--text);
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,.02); }
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 10px;
+  font-family: var(--mono);
+  letter-spacing: .03em;
+}
+.badge-g { background: var(--green-dim); color: var(--green); border: 0.5px solid rgba(62,207,142,.25); }
+.badge-a { background: var(--amber-dim); color: var(--amber); border: 0.5px solid rgba(245,166,35,.25); }
+.badge-r { background: rgba(248,113,113,.1); color: var(--coral); border: 0.5px solid rgba(248,113,113,.25); }
+
+/* ── Footer ─────────────────────────────────────────────────── */
+.app-footer {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 0.5px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: gap;
+  gap: 1rem;
+}
+.footer-text { font-size: 11px; font-family: var(--mono); color: var(--text3); }
+
+/* ── Scrollbar ──────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+
+@media (max-width: 600px) {
+  .stats-row { grid-template-columns: 1fr 1fr; }
+  .arrays-row { grid-template-columns: 1fr; }
+  .app-header { flex-direction: column; }
+  .app-header-right { text-align: left; }
+  .speed-wrap { margin-left: 0; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ── HEADER ──────────────────────────────────────────────── -->
+  <header class="app-header">
+    <div class="app-header-left">
+      <div class="app-badge">● Laboratorio #3 &nbsp;·&nbsp; Estructura de Datos II</div>
+      <h1 class="app-title">Quick<span>sort</span> Visualizer</h1>
+      <p class="app-subtitle">Universidad Tecnológica de Panamá &nbsp;·&nbsp; Centro Regional de Colón</p>
+    </div>
+    <div class="app-header-right">
+      <div class="info-pill">Facilitador: Ing. Ariel Martínez</div><br>
+      <div class="info-pill">Lenguaje: Python 3</div><br>
+      <div class="info-pill">n = 20 · rango [1, 100]</div>
+    </div>
+  </header>
+
+  <!-- ── VISUALIZADOR ─────────────────────────────────────────── -->
+  <div class="section-label">01 &mdash; Visualizador interactivo</div>
+
+  <div class="stats-row">
+    <div class="stat"><div class="stat-label">Comparaciones</div><div class="stat-val" id="s-cmp">—</div></div>
+    <div class="stat"><div class="stat-label">Intercambios</div><div class="stat-val" id="s-swp">—</div></div>
+    <div class="stat"><div class="stat-label">Tiempo (ms)</div><div class="stat-val" id="s-time">—</div></div>
+    <div class="stat"><div class="stat-label">Estado</div><div class="stat-val" id="s-state" style="font-size:14px;margin-top:6px">Listo</div></div>
+  </div>
+
+  <div class="viz-card">
+    <div class="viz-bars" id="viz"></div>
+  </div>
+
+  <div class="legend">
+    <div class="leg"><div class="leg-dot" style="background:#3a3f58"></div>sin ordenar</div>
+    <div class="leg"><div class="leg-dot" style="background:#4a3f7a"></div>rango activo</div>
+    <div class="leg"><div class="leg-dot" style="background:#f5a623"></div>pivote</div>
+    <div class="leg"><div class="leg-dot" style="background:#5b8dee"></div>comparando</div>
+    <div class="leg"><div class="leg-dot" style="background:#3ecf8e"></div>intercambiando</div>
+    <div class="leg"><div class="leg-dot" style="background:rgba(62,207,142,.45)"></div>ordenado</div>
+  </div>
+
+  <div class="controls">
+    <button class="btn btn-green" id="btn-gen"   onclick="generateArray()">⟳ Nueva lista</button>
+    <button class="btn btn-green" id="btn-play"  onclick="togglePlay()" disabled>▶ Iniciar</button>
+    <button class="btn"           id="btn-step"  onclick="stepOnce()"   disabled>⏭ Paso a paso</button>
+    <button class="btn btn-coral" id="btn-reset" onclick="resetAll(false)">↺ Reiniciar</button>
+    <div class="speed-wrap">
+      <label>Velocidad</label>
+      <input type="range" id="speed" min="1" max="10" value="5" step="1" oninput="document.getElementById('sp-val').textContent=this.value">
+      <span class="speed-val" id="sp-val">5</span>
+    </div>
+  </div>
+
+  <div class="arrays-row">
+    <div class="arr-box">
+      <div class="arr-label">Lista original (desordenada)</div>
+      <div class="arr-nums" id="orig-arr">— presiona "Nueva lista" para comenzar —</div>
+    </div>
+    <div class="arr-box">
+      <div class="arr-label">Lista ordenada (resultado)</div>
+      <div class="arr-nums" id="sorted-arr">—</div>
+    </div>
+  </div>
+
+  <div class="log" id="log">
+    <div class="log-line">&gt; Bienvenido al visualizador de Quicksort. Presiona "Nueva lista".</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ── CÓDIGO ──────────────────────────────────────────────── -->
+  <div class="section-label">02 &mdash; Código fuente (Python 3)</div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('code')">codigo.py</button>
+    <button class="tab" onclick="switchTab('explain')">explicación</button>
+    <button class="tab" onclick="switchTab('complexity')">complejidad</button>
+  </div>
+
+  <!-- Pestaña: código -->
+  <div id="tab-code" class="tab-pane active">
+    <div class="code-card">
+      <div class="code-top">
+        <div class="code-filename">
+          <div class="dot" style="background:#f87171"></div>
+          <div class="dot" style="background:#f5a623"></div>
+          <div class="dot" style="background:#3ecf8e"></div>
+          &nbsp; lab3_quicksort.py
+        </div>
+        <button class="copy-btn" onclick="copyCode()">copiar código</button>
+      </div>
+      <pre><span class="line cm"># ============================================================</span>
+<span class="line cm">#  UNIVERSIDAD TECNOLÓGICA DE PANAMÁ</span>
+<span class="line cm">#  Centro Regional de Colón</span>
+<span class="line cm">#  Laboratorio #3 – Eficiencia Algorítmica y Ordenamiento</span>
+<span class="line cm">#  Algoritmo: Quicksort  |  Lenguaje: Python 3</span>
+<span class="line cm"># ============================================================</span>
+<span class="line"></span>
+<span class="line"><span class="kw">import</span> random   <span class="cm"># genera números aleatorios</span></span>
+<span class="line"><span class="kw">import</span> time     <span class="cm"># mide tiempo de ejecución</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line cm"># ── FUNCIÓN 1: generar_lista ─────────────────────────────────</span>
+<span class="line cm"># Genera exactamente 20 números aleatorios en rango [1, 100].</span>
+<span class="line cm"># random.randint(a,b) retorna N donde a ≤ N ≤ b.</span>
+<span class="line"><span class="df">def</span> <span class="fn">generar_lista</span>(cantidad<span class="op">=</span><span class="nm">20</span>, minimo<span class="op">=</span><span class="nm">1</span>, maximo<span class="op">=</span><span class="nm">100</span>):</span>
+<span class="line">    lista <span class="op">=</span> []</span>
+<span class="line">    <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(cantidad):</span>
+<span class="line">        lista.append(random.randint(minimo, maximo))</span>
+<span class="line">    <span class="kw">return</span> lista</span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line cm"># ── FUNCIÓN 2: particion ─────────────────────────────────────</span>
+<span class="line cm"># Esquema de partición Lomuto:</span>
+<span class="line cm">#   1. Último elemento = pivote.</span>
+<span class="line cm">#   2. Se recorre el sub-arreglo buscando elementos ≤ pivote.</span>
+<span class="line cm">#   3. Se intercambian acumulándolos a la izquierda.</span>
+<span class="line cm">#   4. Pivote se coloca en su posición definitiva (i+1).</span>
+<span class="line"><span class="df">def</span> <span class="fn">particion</span>(lista, bajo, alto):</span>
+<span class="line">    pivote <span class="op">=</span> lista[alto]       <span class="cm"># elegir último como pivote</span></span>
+<span class="line">    i <span class="op">=</span> bajo <span class="op">-</span> <span class="nm">1</span>              <span class="cm"># índice del menor encontrado</span></span>
+<span class="line"></span>
+<span class="line">    <span class="kw">for</span> j <span class="kw">in</span> <span class="bi">range</span>(bajo, alto):</span>
+<span class="line">        <span class="kw">if</span> lista[j] <span class="op">&lt;=</span> pivote:</span>
+<span class="line">            i <span class="op">+=</span> <span class="nm">1</span></span>
+<span class="line hl">            lista[i], lista[j] <span class="op">=</span> lista[j], lista[i]   <span class="cm"># swap</span></span>
+<span class="line"></span>
+<span class="line cm">    # Colocar pivote en su posición final</span>
+<span class="line hl">    lista[i <span class="op">+</span> <span class="nm">1</span>], lista[alto] <span class="op">=</span> lista[alto], lista[i <span class="op">+</span> <span class="nm">1</span>]</span>
+<span class="line">    <span class="kw">return</span> i <span class="op">+</span> <span class="nm">1</span>               <span class="cm"># índice definitivo del pivote</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line cm"># ── FUNCIÓN 3: quicksort ─────────────────────────────────────</span>
+<span class="line cm"># Divide y vencerás recursivo:</span>
+<span class="line cm">#   DIVIDIR   → particion() ubica el pivote</span>
+<span class="line cm">#   CONQUISTAR → recursión en sub-arreglos izq. y der.</span>
+<span class="line cm">#   COMBINAR  → no necesario (ordena in-place)</span>
+<span class="line"><span class="df">def</span> <span class="fn">quicksort</span>(lista, bajo, alto):</span>
+<span class="line">    <span class="kw">if</span> bajo <span class="op">&lt;</span> alto:                       <span class="cm"># caso base: 0 ó 1 elemento</span></span>
+<span class="line hl">        idx <span class="op">=</span> <span class="fn">particion</span>(lista, bajo, alto)</span>
+<span class="line hl">        <span class="fn">quicksort</span>(lista, bajo, idx <span class="op">-</span> <span class="nm">1</span>)    <span class="cm"># recursión izquierda</span></span>
+<span class="line hl">        <span class="fn">quicksort</span>(lista, idx <span class="op">+</span> <span class="nm">1</span>, alto)    <span class="cm"># recursión derecha</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line cm"># ── FUNCIÓN 4: mostrar_lista ─────────────────────────────────</span>
+<span class="line"><span class="df">def</span> <span class="fn">mostrar_lista</span>(lista, etiqueta):</span>
+<span class="line">    elementos <span class="op">=</span> <span class="st">", "</span>.join(<span class="bi">str</span>(n) <span class="kw">for</span> n <span class="kw">in</span> lista)</span>
+<span class="line">    <span class="bi">print</span>(<span class="st">f"  {etiqueta}: [{elementos}]"</span>)</span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line cm"># ── PROGRAMA PRINCIPAL ───────────────────────────────────────</span>
+<span class="line"><span class="df">def</span> <span class="fn">main</span>():</span>
+<span class="line">    <span class="bi">print</span>(<span class="st">"="</span> <span class="op">*</span> <span class="nm">60</span>)</span>
+<span class="line">    <span class="bi">print</span>(<span class="st">"   LABORATORIO #3 – QUICKSORT  |  UTP Colón"</span>)</span>
+<span class="line">    <span class="bi">print</span>(<span class="st">"="</span> <span class="op">*</span> <span class="nm">60</span>)</span>
+<span class="line"></span>
+<span class="line">    lista_original    <span class="op">=</span> <span class="fn">generar_lista</span>()</span>
+<span class="line">    lista_para_ordenar <span class="op">=</span> lista_original.copy()  <span class="cm"># copia para preservar original</span></span>
+<span class="line"></span>
+<span class="line">    <span class="bi">print</span>(<span class="st">f"\n  Números generados: 20  |  Rango: 1 – 100\n"</span>)</span>
+<span class="line">    <span class="fn">mostrar_lista</span>(lista_original,    <span class="st">"Lista ORIGINAL (desordenada)"</span>)</span>
+<span class="line"></span>
+<span class="line">    inicio <span class="op">=</span> time.perf_counter()</span>
+<span class="line">    <span class="fn">quicksort</span>(lista_para_ordenar, <span class="nm">0</span>, <span class="bi">len</span>(lista_para_ordenar) <span class="op">-</span> <span class="nm">1</span>)</span>
+<span class="line">    fin    <span class="op">=</span> time.perf_counter()</span>
+<span class="line"></span>
+<span class="line">    <span class="fn">mostrar_lista</span>(lista_para_ordenar, <span class="st">"Lista ORDENADA  (Quicksort)"</span>)</span>
+<span class="line">    tiempo_ms <span class="op">=</span> (fin <span class="op">-</span> inicio) <span class="op">*</span> <span class="nm">1_000</span></span>
+<span class="line">    <span class="bi">print</span>(<span class="st">f"\n  Tiempo de ejecución : {tiempo_ms:.6f} ms"</span>)</span>
+<span class="line">    <span class="bi">print</span>(<span class="st">f"  Complejidad         : O(n log n) caso promedio"</span>)</span>
+<span class="line">    <span class="bi">print</span>(<span class="st">"="</span> <span class="op">*</span> <span class="nm">60</span>)</span>
+<span class="line"></span>
+<span class="line"><span class="kw">if</span> __name__ <span class="op">==</span> <span class="st">"__main__"</span>:</span>
+<span class="line">    <span class="fn">main</span>()</span></pre>
+    </div>
+    <div class="code-legend">
+      <div class="cl"><div class="cl-dot" style="background:#c792ea"></div>palabra clave</div>
+      <div class="cl"><div class="cl-dot" style="background:#3ecf8e"></div>función</div>
+      <div class="cl"><div class="cl-dot" style="background:#f78c6c"></div>string</div>
+      <div class="cl"><div class="cl-dot" style="background:#f5a623"></div>número</div>
+      <div class="cl"><div class="cl-dot" style="background:#5b8dee"></div>built-in</div>
+      <div class="cl"><div class="cl-dot" style="background:#546e7a"></div>comentario</div>
+      <div class="cl"><div class="cl-dot" style="background:#3ecf8e;width:16px;height:4px;border-radius:2px"></div>línea clave</div>
+    </div>
+  </div>
+
+  <!-- Pestaña: explicación -->
+  <div id="tab-explain" class="tab-pane">
+    <div class="step-grid">
+      <div class="step-card">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-name">generar_lista()</div>
+          <div class="step-desc">Crea una lista de 20 enteros aleatorios entre 1 y 100 usando <code>random.randint()</code>. Se hace una copia con <code>.copy()</code> antes de ordenar para preservar el arreglo original y poder mostrarlo al usuario.</div>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-name">particion(lista, bajo, alto)</div>
+          <div class="step-desc">El corazón del algoritmo — implementa el esquema Lomuto. Selecciona <code>lista[alto]</code> como pivote. Recorre con el índice <code>j</code>; cuando encuentra un elemento ≤ pivote, incrementa <code>i</code> y hace swap. Al terminar el recorrido, el pivote se intercambia a <code>i+1</code>, quedando en su posición definitiva. Retorna ese índice.</div>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-name">quicksort(lista, bajo, alto)</div>
+          <div class="step-desc">Función recursiva. Caso base: <code>bajo >= alto</code> (0 ó 1 elemento, ya ordenado — no hace nada). Caso recursivo: llama a <code>particion()</code> para ubicar el pivote, luego se llama a sí misma en el sub-arreglo izquierdo (menores) y en el derecho (mayores). Ordena in-place, sin memoria auxiliar.</div>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">4</div>
+        <div>
+          <div class="step-name">main()</div>
+          <div class="step-desc">Orquesta todo: genera la lista, muestra el estado original, ejecuta <code>quicksort()</code> midiendo el tiempo con <code>time.perf_counter()</code> de alta resolución, y muestra el resultado con estadísticas de eficiencia.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pestaña: complejidad -->
+  <div id="tab-complexity" class="tab-pane">
+    <div class="section-label" style="margin-bottom:.75rem">Complejidad de Quicksort</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Caso</th><th>Tiempo</th><th>Espacio</th><th>Cuándo ocurre</th><th>Evaluación</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Mejor caso</td><td>O(n log n)</td><td>O(log n)</td><td>Pivote siempre divide al centro</td><td><span class="badge badge-g">óptimo</span></td></tr>
+          <tr><td>Caso promedio</td><td>O(n log n)</td><td>O(log n)</td><td>Datos aleatorios (este lab)</td><td><span class="badge badge-g">esperado</span></td></tr>
+          <tr><td>Peor caso</td><td>O(n²)</td><td>O(n)</td><td>Lista ya ordenada + Lomuto</td><td><span class="badge badge-r">evitar</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="section-label" style="margin-bottom:.75rem">Comparación con otros algoritmos</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Algoritmo</th><th>Mejor caso</th><th>Promedio</th><th>Peor caso</th><th>In-place</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Quicksort</strong></td><td>O(n log n)</td><td>O(n log n)</td><td>O(n²)</td><td><span class="badge badge-g">sí</span></td></tr>
+          <tr><td>Merge Sort</td><td>O(n log n)</td><td>O(n log n)</td><td>O(n log n)</td><td><span class="badge badge-r">no</span></td></tr>
+          <tr><td>Bubble Sort</td><td>O(n)</td><td>O(n²)</td><td>O(n²)</td><td><span class="badge badge-g">sí</span></td></tr>
+          <tr><td>Insertion Sort</td><td>O(n)</td><td>O(n²)</td><td>O(n²)</td><td><span class="badge badge-g">sí</span></td></tr>
+          <tr><td>Selection Sort</td><td>O(n²)</td><td>O(n²)</td><td>O(n²)</td><td><span class="badge badge-g">sí</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── FOOTER ───────────────────────────────────────────────── -->
+  <footer class="app-footer">
+    <div class="footer-text">Universidad Tecnológica de Panamá &nbsp;·&nbsp; Centro Regional de Colón &nbsp;·&nbsp; Estructura de Datos II</div>
+    <div class="footer-text">Facilitador: Ing. Ariel Martínez &nbsp;·&nbsp; Lab #3</div>
+  </footer>
+
+</div><!-- /page -->
+
+<script>
+/* ─── Quicksort engine ─────────────────────────────────────── */
+const N=20,MIN=1,MAX=100;
+let arr=[],steps=[],stepIdx=0;
+let playing=false,timer=null;
+let cmps=0,swps=0,t0=null;
+let sorted=new Set();
+
+const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+
+function generateArray(){
+  resetAll(true);
+  arr=Array.from({length:N},()=>rnd(MIN,MAX));
+  buildSteps([...arr]);
+  document.getElementById('orig-arr').textContent='[ '+arr.join(', ')+' ]';
+  document.getElementById('sorted-arr').textContent='—';
+  renderBars(arr,[],-1,-1,-1,0,arr.length-1);
+  setStats(0,0,'—','Listo');
+  log('Lista generada: [ '+arr.join(', ')+' ]','');
+  document.getElementById('btn-play').disabled=false;
+  document.getElementById('btn-step').disabled=false;
+  document.getElementById('btn-play').textContent='▶ Iniciar';
+}
+
+function buildSteps(a){
+  steps=[];
+  const sw=(a,i,j)=>{let t=a[i];a[i]=a[j];a[j]=t;};
+  function part(a,lo,hi){
+    let pv=a[hi],i=lo-1;
+    steps.push({type:'pivot',arr:[...a],pivot:hi,lo,hi});
+    for(let j=lo;j<hi;j++){
+      steps.push({type:'compare',arr:[...a],i,j,pivot:hi,lo,hi});
+      if(a[j]<=pv){i++;sw(a,i,j);steps.push({type:'swap',arr:[...a],i,j,pivot:hi,lo,hi});}
+    }
+    sw(a,i+1,hi);
+    steps.push({type:'place',arr:[...a],pf:i+1,lo,hi});
+    return i+1;
+  }
+  function qs(a,lo,hi){
+    if(lo<hi){let p=part(a,lo,hi);qs(a,lo,p-1);qs(a,p+1,hi);}
+    else if(lo===hi) steps.push({type:'single',arr:[...a],idx:lo});
+  }
+  qs(a,0,a.length-1);
+  steps.push({type:'done',arr:[...a]});
+}
+
+function renderBars(a,hl,pivot,ci,cj,lo,hi){
+  const viz=document.getElementById('viz');
+  const mx=Math.max(...a);
+  viz.innerHTML='';
+  a.forEach((v,i)=>{
+    const w=document.createElement('div');w.className='bar-wrap';
+    const b=document.createElement('div');b.className='bar';
+    b.style.height=Math.round((v/mx)*185)+'px';
+    if(sorted.has(i))      b.classList.add('b-sorted');
+    else if(i===pivot)     b.classList.add('b-pivot');
+    else if(i===ci||i===cj)b.classList.add('b-compare');
+    else if(hl.includes(i))b.classList.add('b-swap');
+    else if(i>=lo&&i<=hi) b.classList.add('b-range');
+    else                   b.classList.add('b-default');
+    const lbl=document.createElement('div');lbl.className='bar-num';lbl.textContent=v;
+    w.appendChild(b);w.appendChild(lbl);viz.appendChild(w);
+  });
+}
+
+function applyStep(s){
+  if(!s) return;
+  if(s.type==='pivot'){
+    renderBars(s.arr,[],s.pivot,-1,-1,s.lo,s.hi);
+    log('Pivote seleccionado: '+s.arr[s.pivot]+' (índice '+s.pivot+')','log-pivot');
+  } else if(s.type==='compare'){
+    cmps++;renderBars(s.arr,[],s.pivot,s.i<0?-1:s.i,s.j,s.lo,s.hi);
+    setStats(cmps,swps,null,null);
+  } else if(s.type==='swap'){
+    swps++;renderBars(s.arr,[s.i,s.j],s.pivot,-1,-1,s.lo,s.hi);
+    log('Intercambio: idx '+s.i+' ↔ idx '+s.j+' ('+s.arr[s.j]+' ↔ '+s.arr[s.i]+')','log-swap');
+  } else if(s.type==='place'){
+    sorted.add(s.pf);renderBars(s.arr,[],s.pf,-1,-1,s.lo,s.hi);
+    log('Pivote en posición final: índice '+s.pf+' → valor '+s.arr[s.pf],'log-pivot');
+  } else if(s.type==='single'){
+    sorted.add(s.idx);renderBars(s.arr,[],s.idx,-1,-1,s.idx,s.idx);
+  } else if(s.type==='done'){
+    for(let i=0;i<s.arr.length;i++) sorted.add(i);
+    renderBars(s.arr,[],-1,-1,-1,0,s.arr.length-1);
+    const ms=(Date.now()-t0).toFixed(1);
+    setStats(cmps,swps,ms,'Ordenado ✓');
+    const el=document.getElementById('sorted-arr');
+    el.textContent='[ '+s.arr.join(', ')+' ]';el.classList.add('done');
+    log('¡Completado! '+cmps+' comparaciones · '+swps+' intercambios · '+ms+' ms','log-done');
+    stopPlay();
+    document.getElementById('btn-play').disabled=true;
+    document.getElementById('btn-step').disabled=true;
+  }
+}
+
+function stepOnce(){
+  if(stepIdx===0) t0=Date.now();
+  if(stepIdx>=steps.length) return;
+  applyStep(steps[stepIdx++]);
+}
+function togglePlay(){
+  if(playing){stopPlay();}
+  else{
+    playing=true;if(stepIdx===0)t0=Date.now();
+    document.getElementById('btn-play').textContent='⏸ Pausar';
+    setStats(cmps,swps,null,'Ejecutando...');
+    runLoop();
+  }
+}
+function runLoop(){
+  if(!playing||stepIdx>=steps.length){stopPlay();return;}
+  applyStep(steps[stepIdx++]);
+  const sp=parseInt(document.getElementById('speed').value);
+  timer=setTimeout(runLoop,Math.round(620/sp));
+}
+function stopPlay(){
+  playing=false;clearTimeout(timer);
+  document.getElementById('btn-play').textContent=stepIdx>=steps.length?'▶ Iniciar':'▶ Continuar';
+}
+function resetAll(full){
+  stopPlay();sorted=new Set();stepIdx=0;cmps=0;swps=0;
+  if(full){
+    arr=[];steps=[];
+    document.getElementById('orig-arr').textContent='— presiona "Nueva lista" para comenzar —';
+    document.getElementById('sorted-arr').textContent='—';
+    document.getElementById('sorted-arr').classList.remove('done');
+    document.getElementById('viz').innerHTML='';
+    document.getElementById('log').innerHTML='<div class="log-line">&gt; Bienvenido al visualizador de Quicksort. Presiona "Nueva lista".</div>';
+    setStats('—','—','—','Listo');
+    document.getElementById('btn-play').disabled=true;
+    document.getElementById('btn-step').disabled=true;
+  } else {
+    if(arr.length){renderBars(arr,[],-1,-1,-1,0,arr.length-1);}
+    setStats(0,0,'—','Listo');
+    document.getElementById('sorted-arr').classList.remove('done');
+    document.getElementById('sorted-arr').textContent='—';
+    document.getElementById('btn-play').disabled=false;
+    document.getElementById('btn-step').disabled=false;
+    document.getElementById('btn-play').textContent='▶ Iniciar';
+  }
+}
+function setStats(c,s,t,st){
+  if(c!==null) document.getElementById('s-cmp').textContent=c;
+  if(s!==null) document.getElementById('s-swp').textContent=s;
+  if(t!==null) document.getElementById('s-time').textContent=t;
+  if(st!==null) document.getElementById('s-state').textContent=st;
+}
+function log(msg,cls){
+  const el=document.getElementById('log');
+  const d=document.createElement('div');
+  d.className='log-line '+(cls||'');d.textContent='> '+msg;
+  el.appendChild(d);el.scrollTop=el.scrollHeight;
+}
+
+/* ─── Tabs ─────────────────────────────────────────────────── */
+function switchTab(id){
+  ['code','explain','complexity'].forEach(t=>{
+    document.querySelector(`.tabs .tab:nth-child(${['code','explain','complexity'].indexOf(t)+1})`).classList.toggle('active',t===id);
+    document.getElementById('tab-'+t).classList.toggle('active',t===id);
+  });
+}
+
+/* ─── Copy code ────────────────────────────────────────────── */
+const PYTHON_CODE=`import random
+import time
+
+
+def generar_lista(cantidad=20, minimo=1, maximo=100):
+    """Retorna una lista de 'cantidad' números aleatorios entre minimo y maximo."""
+    lista = []
+    for _ in range(cantidad):
+        lista.append(random.randint(minimo, maximo))
+    return lista
+
+
+def particion(lista, bajo, alto):
+    """
+    Esquema Lomuto: reorganiza lista[bajo..alto] en torno al pivote
+    y devuelve el índice final del pivote.
+    """
+    pivote = lista[alto]       # elegir último como pivote
+    i = bajo - 1              # índice del menor encontrado
+
+    for j in range(bajo, alto):
+        if lista[j] <= pivote:
+            i += 1
+            lista[i], lista[j] = lista[j], lista[i]   # swap
+
+    # Colocar pivote en su posición definitiva
+    lista[i + 1], lista[alto] = lista[alto], lista[i + 1]
+    return i + 1
+
+
+def quicksort(lista, bajo, alto):
+    """
+    Divide y vencerás recursivo.
+    Caso base: bajo >= alto (0 ó 1 elemento, ya ordenado).
+    """
+    if bajo < alto:
+        idx = particion(lista, bajo, alto)
+        quicksort(lista, bajo, idx - 1)    # recursión izquierda
+        quicksort(lista, idx + 1, alto)    # recursión derecha
+
+
+def mostrar_lista(lista, etiqueta):
+    elementos = ", ".join(str(n) for n in lista)
+    print(f"  {etiqueta}: [{elementos}]")
+
+
+def main():
+    print("=" * 60)
+    print("   LABORATORIO #3 – QUICKSORT  |  UTP Colón")
+    print("=" * 60)
+
+    lista_original    = generar_lista()
+    lista_para_ordenar = lista_original.copy()
+
+    print(f"\\n  Números generados: 20  |  Rango: 1 – 100\\n")
+    mostrar_lista(lista_original,    "Lista ORIGINAL (desordenada)")
+
+    inicio = time.perf_counter()
+    quicksort(lista_para_ordenar, 0, len(lista_para_ordenar) - 1)
+    fin    = time.perf_counter()
+
+    mostrar_lista(lista_para_ordenar, "Lista ORDENADA  (Quicksort)")
+    print(f"\\n  Tiempo de ejecución : {(fin - inicio) * 1000:.6f} ms")
+    print(f"  Complejidad         : O(n log n) caso promedio")
+    print("=" * 60)
+
+
+if __name__ == "__main__":
+    main()`;
+
+function copyCode(){
+  navigator.clipboard.writeText(PYTHON_CODE).then(()=>{
+    const btn=document.querySelector('.copy-btn');
+    btn.textContent='copiado ✓';btn.style.color='var(--green)';
+    setTimeout(()=>{btn.textContent='copiar código';btn.style.color='';},2200);
+  });
+}
+</script>
+</body>
+</html>
